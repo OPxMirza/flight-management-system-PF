@@ -1,9 +1,9 @@
 
 # ✈️ Flight Management System (C++ Console Application)
 
-A complete **console-based Flight Management System** developed in **C++**, designed to demonstrate real-world programming concepts such as **file handling, pointers, authentication, booking workflows, and payment simulation**.
+A complete **console-based Flight Management System** developed in **C++**, demonstrating real-world programming concepts such as **file handling, pointers, authentication, booking workflows, payment simulation, and booking history management**.
 
-This project supports **Admin** and **Passenger** roles and maintains persistent data using text files.
+This project supports **Admin** and **Passenger** roles and stores data persistently using text files.
 
 🔗 **GitHub Repository:**  
 https://github.com/OPxMirza/flight-management-system-cpp
@@ -16,7 +16,7 @@ https://github.com/OPxMirza/flight-management-system-cpp
 - Secure admin login
 - View all available flights
 - Add new flights
-- Flight data stored persistently in `flights.txt`
+- Flight data stored in `flights.txt`
 
 ---
 
@@ -26,14 +26,13 @@ https://github.com/OPxMirza/flight-management-system-cpp
 - Search flights by **From, To, Date**
 - Book flight tickets with:
   - 🎟️ **Random unique Booking ID**
-  - 💳 **Payment method selection**:
+  - 💳 **Payment method selection**
     - Cash  
     - Card  
-    - EasyPaisa  
-    - JazzCash
+    - Online Payment
 - Cancel bookings (status changes to **CANCELLED**, history preserved)
 - View complete **Flight History** (ACTIVE + CANCELLED)
-- All data stored using file handling
+- All passenger and booking data stored using file handling
 
 ---
 
@@ -42,7 +41,7 @@ https://github.com/OPxMirza/flight-management-system-cpp
 - **File Handling (`fstream`)**
 - **Pointers & Arrays**
 - **Random Number Generation**
-- **Menu-driven Console UI**
+- **Menu-driven Console Interface**
 
 ---
 
@@ -51,10 +50,11 @@ https://github.com/OPxMirza/flight-management-system-cpp
 ```text
 flight-management-system-cpp/
 │
-├── main.cpp
+├── flight.cpp
 ├── flights.txt
 ├── passengers.txt
 ├── bookings.txt
+├── .gitignore
 └── README.md
 ````
 
@@ -119,7 +119,7 @@ Example:
 2. Searches available flights
 3. Selects flight by ID
 4. Enters passenger (traveller) name
-5. Chooses payment method
+5. Chooses payment method (Cash / Card / Online)
 6. System validates payment input
 7. Random **Booking ID** is generated
 8. Seat count updates automatically
@@ -141,20 +141,20 @@ Example:
 ### Compile
 
 ```bash
-g++ main.cpp -o flight_system
+g++ flight.cpp -o flight
 ```
 
 ### Run (Linux / macOS)
 
 ```bash
-./flight_system
+./flight
 ```
 
 ### Run (Windows)
 
 ```bash
-g++ main.cpp -o flight_system.exe
-flight_system.exe
+g++ flight.cpp -o flight.exe
+flight.exe
 ```
 
 ---
@@ -170,7 +170,7 @@ flight_system.exe
 
 * Replace text files with database (MySQL / SQLite)
 * Encrypt passwords
-* Add seat selection
+* Add seat selection feature
 * Add admin booking management
 * Convert to GUI or web-based application
 
@@ -187,7 +187,3 @@ GitHub: [https://github.com/OPxMirza](https://github.com/OPxMirza)
 
 This project is intended for **learning and academic purposes**.
 You are free to modify and reuse it with proper credit.
-
-```
-
-

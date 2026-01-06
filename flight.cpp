@@ -24,7 +24,7 @@ struct Booking {
     int flightID;
     string passengerName;
     string status;         // "ACTIVE" or "CANCELLED"
-    string paymentMethod;  // "CASH" / "CARD" / "EASYPAISA" / "JAZZCASH"
+    string paymentMethod;  // "CASH" / "CARD" / "ONLINE"
 };
 
 // -------------------- GLOBAL ARRAYS --------------------
@@ -69,6 +69,13 @@ bool isDigitsOnly(const string &s) {
     return true;
 }
 
+bool isEmailValidBasic(const string &email) {
+    // Basic check: must contain one '@' and one '.'
+    size_t atPos = email.find('@');
+    size_t dotPos = email.rfind('.');
+    return (atPos != string::npos && dotPos != string::npos && atPos < dotPos && atPos > 0 && dotPos < email.size() - 1);
+}
+
 // -------------------- BOOKING ID (RANDOM + UNIQUE) --------------------
 bool bookingIDExists(int id) {
     Booking* b = bookings;
@@ -95,6 +102,7 @@ Flight* findFlightByID(int id) {
     return nullptr;
 }
 
+// Only returns true if an ACTIVE booking exists (cancelled bookings do NOT block rebooking)
 bool checkActiveBookingExists(const string &name, const string &phone, int flightID) {
     Booking* bookingPtr = bookings;
     for (int i = 0; i < bookingCount; i++) {
@@ -190,6 +198,7 @@ bool adminLogin() {
     const string storedPass = "123";
 
     string user, pass;
+
     while (true) {
         cout << "Enter Admin Username: ";
         cin >> user;
@@ -208,13 +217,10 @@ bool adminLogin() {
 
 // -------------------- PASSENGER SIGNUP/LOGIN (EMAIL BASED) --------------------
 /*
-passengers.txt format (NEW):
+passengers.txt format:
 name email phone password
-Example:
-Ali ali@gmail.com 03011234567 ali123
 */
 
-// Check if email already exists in passengers.txt
 bool emailExists(const string &email) {
     ifstream file("passengers.txt");
     string n, e, p, pass;
@@ -235,10 +241,14 @@ void passengerSignup() {
     cout << "Enter Name: ";
     cin >> name;
 
-    // Email must be unique
     while (true) {
         cout << "Enter Email: ";
         cin >> email;
+
+        if (!isEmailValidBasic(email)) {
+            cout << "Invalid email format! Example: user@gmail.com\n";
+            continue;
+        }
 
         if (emailExists(email)) {
             cout << "This email already exists! Please use another email.\n";
@@ -260,11 +270,9 @@ void passengerSignup() {
     cout << "Signup Successful!\n";
 }
 
-// Login using EMAIL + PASSWORD. If email not found -> user does not exist.
 bool passengerLogin(string &name, string &email, string &phone) {
     string inputEmail, inputPass;
 
-    // Load passengers into arrays (simple)
     string names[50], emails[50], phones[50], passwords[50];
     int userCount = 0;
 
@@ -323,13 +331,12 @@ bool passengerLogin(string &name, string &email, string &phone) {
 // -------------------- PAYMENT --------------------
 string choosePaymentMethod() {
     cout << "\n--- Payment Method ---\n";
-    cout << "1. Cash\n2. Card\n3. EasyPaisa\n4. JazzCash\n";
-    int c = getValidChoice("Choose: ", 1, 4);
+    cout << "1. Cash\n2. Card\n3. Online Payment\n";
+    int c = getValidChoice("Choose: ", 1, 3);
 
     if (c == 1) return "CASH";
     if (c == 2) return "CARD";
-    if (c == 3) return "EASYPAISA";
-    return "JAZZCASH";
+    return "ONLINE";
 }
 
 bool processPayment(const string &method, int amountRs) {
@@ -360,18 +367,19 @@ bool processPayment(const string &method, int amountRs) {
         return true;
     }
 
-    if (method == "EASYPAISA" || method == "JAZZCASH") {
-        string walletPhone, otp;
-        cout << "Enter Wallet Phone Number: ";
-        cin >> walletPhone;
+    if (method == "ONLINE") {
+        // Simple online payment simulation (transaction id + otp)
+        string transactionID, otp;
+        cout << "Enter Transaction ID: ";
+        cin >> transactionID;
         cout << "Enter OTP (4 digits): ";
         cin >> otp;
 
-        if (walletPhone.size() < 10 || !isDigitsOnly(otp) || otp.size() != 4) {
-            cout << "Payment failed: invalid wallet details.\n";
+        if (transactionID.size() < 4 || otp.size() != 4 || !isDigitsOnly(otp)) {
+            cout << "Payment failed: invalid online payment details.\n";
             return false;
         }
-        cout << "Payment successful via " << method << ".\n";
+        cout << "Payment successful via ONLINE payment.\n";
         return true;
     }
 
@@ -602,6 +610,7 @@ int main() {
                     cout << "\n--- ADMIN MENU ---\n";
                     cout << "1. View Flights\n2. Add Flight\n3. Back to Main Menu\n";
                     choice = getValidChoice("Choice: ", 1, 3);
+
                     switch (choice) {
                         case 1: viewFlights(); break;
                         case 2: addFlight(); break;
@@ -617,7 +626,6 @@ int main() {
 
             if (option == 2) passengerSignup();
 
-            // Login using email+password and validate if user exists
             bool ok = passengerLogin(name, email, phone);
             if (!ok) continue;
 
