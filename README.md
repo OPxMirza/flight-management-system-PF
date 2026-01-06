@@ -1,11 +1,4 @@
-Here is your **fully updated, GitHub-ready `README.md`**, tailored for
-**OPxMirza** and the repository **`flight-management-system-cpp`**.
 
-You can **copy–paste this directly** into `README.md`.
-
----
-
-````md
 # ✈️ Flight Management System (C++ Console Application)
 
 A complete **console-based Flight Management System** developed in **C++**, designed to demonstrate real-world programming concepts such as **file handling, pointers, authentication, booking workflows, and payment simulation**.
@@ -185,7 +178,7 @@ flight_system.exe
 
 ## 👨‍💻 Author
 
-**Sardar Hashir**
+**OPxMirza**
 GitHub: [https://github.com/OPxMirza](https://github.com/OPxMirza)
 
 ---
@@ -197,15 +190,4 @@ You are free to modify and reuse it with proper credit.
 
 ```
 
----
 
-### ✅ Next Steps
-If you want, I can:
-- Add **screenshots section** to README
-- Write **viva / oral explanation**
-- Convert project to **OOP (classes-based)**
-- Design a **GUI version roadmap**
-- Create **resume bullet points**
-
-Just tell me 👊
-```
