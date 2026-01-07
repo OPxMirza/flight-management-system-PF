@@ -6,7 +6,7 @@
 #include <limits>
 using namespace std;
 
-// -------------------- STRUCTS --------------------
+// ===================== STRUCTS =====================
 struct Flight {
     int id;                 // Random unique flight ID
     string from;
@@ -23,7 +23,7 @@ struct Booking {
     string accountName;
     string phone;
     int flightID;
-    string passengerName;
+    string travellerName;
     string status;          // ACTIVE / CANCELLED
     string paymentMethod;   // CASH / CARD / ONLINE
 };
@@ -35,837 +35,679 @@ struct Passenger {
     string password;
 };
 
-// -------------------- GLOBAL ARRAYS --------------------
-Flight flights[50];
-int flightCount = 0;
+// ===================== GLOBAL ARRAYS =====================
+Flight flights[50];     int flightCount = 0;
+Booking bookings[50];   int bookingCount = 0;
+Passenger passengers[50];int passengerCount = 0;
 
-Booking bookings[50];
-int bookingCount = 0;
+// ===================== CONSTANTS =====================
+const string ACTIVE="ACTIVE", CANCELLED="CANCELLED";
+const string CASH="CASH", CARD="CARD", ONLINE="ONLINE";
 
-Passenger passengers[50];
-int passengerCount = 0;
+// ===================== SMALL HELPERS =====================
+void clearLine() { cin.ignore(numeric_limits<streamsize>::max(), '\n'); }
 
-// -------------------- I/O HELPERS --------------------
-void clearLine() {
-    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-}
-
-string readLineNonEmpty(const string &msg) {
-    string s;
-    while (true) {
-        cout << msg;
-        getline(cin, s);
-        if (!s.empty()) return s;
-        cout << "Input cannot be empty.\n";
-    }
-}
-
-string readTokenOrBack(const string &msg) {
-    // reads a single token (no spaces) using >> but allows "0" for back
-    string s;
-    cout << msg;
-    cin >> s;
-    return s;
-}
-
-// -------------------- BASIC HELPERS --------------------
-bool isDigitsOnly(const string &s) {
+bool isDigitsOnly(const string &s){
     if (s.empty()) return false;
-    for (char c : s) if (c < '0' || c > '9') return false;
+    for(char c: s) if(c<'0' || c>'9') return false;
     return true;
 }
 
-bool isEmailValidBasic(const string &email) {
+bool isEmailValidBasic(const string &email){
     size_t atPos = email.find('@');
     size_t dotPos = email.rfind('.');
-    return (atPos != string::npos && dotPos != string::npos && atPos < dotPos && atPos > 0 && dotPos < email.size() - 1);
+    return (atPos != string::npos && dotPos != string::npos &&
+            atPos < dotPos && atPos > 0 && dotPos < email.size()-1);
 }
 
-bool isValidPKPhone(const string &phone) {
-    // Strict Pakistan mobile format: 03XXXXXXXXX (11 digits)
-    if (phone.size() != 11) return false;
-    if (!isDigitsOnly(phone)) return false;
-    if (phone[0] != '0' || phone[1] != '3') return false;
-    return true;
+bool isValidPKPhone(const string &phone){
+    return phone.size()==11 && isDigitsOnly(phone) && phone[0]=='0' && phone[1]=='3';
 }
 
-bool isLeapYear(int y) {
-    return (y % 400 == 0) || (y % 4 == 0 && y % 100 != 0);
+bool isLeapYear(int y){
+    return (y%400==0) || (y%4==0 && y%100!=0);
 }
 
-bool isValidDate(const string &d) {
-    // YYYY-MM-DD, real calendar validation
-    if (d.size() != 10) return false;
-    if (d[4] != '-' || d[7] != '-') return false;
-
-    string ys = d.substr(0, 4);
-    string ms = d.substr(5, 2);
-    string ds = d.substr(8, 2);
-
-    if (!isDigitsOnly(ys) || !isDigitsOnly(ms) || !isDigitsOnly(ds)) return false;
-
-    int y = stoi(ys), m = stoi(ms), day = stoi(ds);
-
-    if (y < 2000 || y > 2100) return false;
-    if (m < 1 || m > 12) return false;
-
-    int daysInMonth[] = {0,31,28,31,30,31,30,31,31,30,31,30,31};
-    int maxDay = daysInMonth[m];
-    if (m == 2 && isLeapYear(y)) maxDay = 29;
-
-    return (day >= 1 && day <= maxDay);
+bool isValidDate(const string &d){
+    if(d.size()!=10 || d[4]!='-' || d[7]!='-') return false;
+    string ys=d.substr(0,4), ms=d.substr(5,2), ds=d.substr(8,2);
+    if(!isDigitsOnly(ys)||!isDigitsOnly(ms)||!isDigitsOnly(ds)) return false;
+    int y=stoi(ys), m=stoi(ms), day=stoi(ds);
+    if(y<2000 || y>2100) return false;
+    if(m<1 || m>12) return false;
+    int daysInMonth[]={0,31,28,31,30,31,30,31,31,30,31,30,31};
+    int maxDay=daysInMonth[m];
+    if(m==2 && isLeapYear(y)) maxDay=29;
+    return (day>=1 && day<=maxDay);
 }
 
-bool isValidTimeHHMM(const string &t) {
-    // HH:MM 24-hour
-    if (t.size() != 5) return false;
-    if (t[2] != ':') return false;
-
-    string hs = t.substr(0,2);
-    string ms = t.substr(3,2);
-
-    if (!isDigitsOnly(hs) || !isDigitsOnly(ms)) return false;
-
-    int h = stoi(hs);
-    int m = stoi(ms);
-
-    return (h >= 0 && h <= 23 && m >= 0 && m <= 59);
+bool isValidTimeHHMM(const string &t){
+    if(t.size()!=5 || t[2]!=':') return false;
+    string hs=t.substr(0,2), ms=t.substr(3,2);
+    if(!isDigitsOnly(hs)||!isDigitsOnly(ms)) return false;
+    int h=stoi(hs), m=stoi(ms);
+    return (h>=0 && h<=23 && m>=0 && m<=59);
 }
 
-// -------------------- INPUT HELPERS --------------------
-int getValidInt(const string &msg) {
+int getValidInt(const string &msg){
     int num;
-    while (true) {
-        cout << msg;
-        if (cin >> num) return num;
-
-        cout << "Invalid input! Enter a number.\n";
-        cin.clear();
-        cin.ignore(1000, '\n');
+    while(true){
+        cout<<msg;
+        if(cin>>num) return num;
+        cout<<"Invalid input! Enter a number.\n";
+        cin.clear(); cin.ignore(1000,'\n');
     }
 }
 
-int getValidChoice(const string &msg, int min, int max) {
-    int choice;
-    while (true) {
-        cout << msg;
-        if (cin >> choice) {
-            if (choice >= min && choice <= max) return choice;
-            cout << "Invalid choice! Please enter a number between " << min << " and " << max << ".\n";
-        } else {
-            cout << "Invalid input! Enter a number.\n";
-            cin.clear();
-            cin.ignore(1000, '\n');
+int getValidChoice(const string &msg,int mn,int mx){
+    int c;
+    while(true){
+        cout<<msg;
+        if(cin>>c){
+            if(c>=mn && c<=mx) return c;
+            cout<<"Invalid choice! ("<<mn<<"-"<<mx<<")\n";
+        }else{
+            cout<<"Invalid input! Enter a number.\n";
+            cin.clear(); cin.ignore(1000,'\n');
         }
     }
 }
 
-string getValidDatePrompt(const string &msg) {
-    string d;
-    while (true) {
+// ===================== REQUIRED MINIMIZERS =====================
+
+// 1) Menu printer (cuts repeated menu code)
+int runMenu(const string &title, const string options[], int n){
+    cout << "\n--- " << title << " ---\n";
+    for(int i=0;i<n;i++) cout << (i+1) << ". " << options[i] << "\n";
+    return getValidChoice("Choice: ", 1, n);
+}
+
+// 2) Generic prompt with validator (cuts date/time/phone prompt functions)
+string promptUntil(const string &msg, bool (*valid)(const string&), const string &error){
+    string x;
+    while(true){
         cout << msg;
-        cin >> d;
-        if (isValidDate(d)) return d;
-        cout << "Invalid date! Use YYYY-MM-DD (real date).\n";
+        cin >> x;
+        if(x=="0") return "0";          // universal "Back"
+        if(valid(x)) return x;
+        cout << error << "\n";
     }
 }
 
-string getValidTimePrompt(const string &msg) {
-    string t;
-    while (true) {
-        cout << msg;
-        cin >> t;
-        if (isValidTimeHHMM(t)) return t;
-        cout << "Invalid time! Use HH:MM (24-hour).\n";
+// 3) One booking printer used everywhere
+void printBooking(const Booking &b){
+    Flight *f = nullptr;
+    for(int i=0;i<flightCount;i++) if(flights[i].id==b.flightID){ f=&flights[i]; break; }
+
+    cout << "BookingID: " << b.bookingID
+         << " | Account: " << b.accountName
+         << " | Phone: " << b.phone
+         << " | FlightID: " << b.flightID
+         << " | Traveller: " << b.travellerName
+         << " | Payment: " << b.paymentMethod
+         << " | Status: " << b.status;
+
+    if(f){
+        cout << " | " << f->from << " -> " << f->to
+             << " | Date: " << f->date
+             << " | Dep: " << f->departureTime
+             << " | Arr: " << f->arrivalTime
+             << " | Price: Rs " << f->price;
     }
+    cout << "\n";
 }
 
-string getValidPhonePrompt(const string &msg) {
-    string p;
-    while (true) {
-        cout << msg;
-        cin >> p;
-        if (isValidPKPhone(p)) return p;
-        cout << "Invalid phone! Use Pakistan format: 03XXXXXXXXX (11 digits)\n";
-    }
+// ===================== DISPLAY =====================
+void displayFlight(const Flight &f){
+    cout << "ID: " << f.id << " | " << f.from << " -> " << f.to
+         << " | Seats: " << f.seats
+         << " | Price: Rs " << f.price
+         << " | Date: " << f.date
+         << " | Dep: " << f.departureTime
+         << " | Arr: " << f.arrivalTime << "\n";
 }
 
-// -------------------- FILE OPERATIONS --------------------
-void loadFlights() {
-    ifstream file("flights.txt");
-    flightCount = 0;
-
-    // FORMAT (with spaces allowed):
-    // id|from|to|seats|price|date|departure|arrival
-    // Using '|' delimiter for safe space support.
-    // Example:
-    // 123|Karachi|Lahore|20|18000|2026-01-10|09:00|10:30
-
-    string line;
-    while (getline(file, line)) {
-        if (line.empty()) continue;
-        if (flightCount >= 50) break;
-
-        // parse by '|'
-        int partsCount = 0;
-        string parts[8];
-        string temp;
-        for (char c : line) {
-            if (c == '|') {
-                if (partsCount < 8) parts[partsCount++] = temp;
-                temp.clear();
-            } else temp.push_back(c);
-        }
-        if (partsCount < 7) continue;
-        parts[partsCount++] = temp;
-
-        if (partsCount != 8) continue;
-
-        flights[flightCount].id = stoi(parts[0]);
-        flights[flightCount].from = parts[1];
-        flights[flightCount].to = parts[2];
-        flights[flightCount].seats = stoi(parts[3]);
-        flights[flightCount].price = stoi(parts[4]);
-        flights[flightCount].date = parts[5];
-        flights[flightCount].departureTime = parts[6];
-        flights[flightCount].arrivalTime = parts[7];
-
-        flightCount++;
-    }
-    file.close();
+void viewAllFlights(){
+    cout << "\n--- Available Flights ---\n";
+    if(flightCount==0){ cout<<"No flights available.\n"; return; }
+    for(int i=0;i<flightCount;i++) displayFlight(flights[i]);
 }
 
-void saveFlightsToFile() {
-    ofstream file("flights.txt");
-    for (int i = 0; i < flightCount; i++) {
-        file << flights[i].id << "|"
-             << flights[i].from << "|"
-             << flights[i].to << "|"
-             << flights[i].seats << "|"
-             << flights[i].price << "|"
-             << flights[i].date << "|"
-             << flights[i].departureTime << "|"
-             << flights[i].arrivalTime << "\n";
-    }
-    file.close();
-}
-
-void loadBookings() {
-    ifstream file("bookings.txt");
-    bookingCount = 0;
-
-    // FORMAT:
-    // bookingID|accountName|phone|flightID|passengerName|status|paymentMethod
-    string line;
-    while (getline(file, line)) {
-        if (line.empty()) continue;
-        if (bookingCount >= 50) break;
-
-        int partsCount = 0;
-        string parts[7];
-        string temp;
-
-        for (char c : line) {
-            if (c == '|') {
-                if (partsCount < 7) parts[partsCount++] = temp;
-                temp.clear();
-            } else temp.push_back(c);
-        }
-        if (partsCount < 6) continue;
-        parts[partsCount++] = temp;
-
-        if (partsCount != 7) continue;
-
-        bookings[bookingCount].bookingID = stoi(parts[0]);
-        bookings[bookingCount].accountName = parts[1];
-        bookings[bookingCount].phone = parts[2];
-        bookings[bookingCount].flightID = stoi(parts[3]);
-        bookings[bookingCount].passengerName = parts[4];
-        bookings[bookingCount].status = parts[5];
-        bookings[bookingCount].paymentMethod = parts[6];
-
-        bookingCount++;
-    }
-    file.close();
-}
-
-void saveBookingsToFile() {
-    ofstream file("bookings.txt");
-    for (int i = 0; i < bookingCount; i++) {
-        file << bookings[i].bookingID << "|"
-             << bookings[i].accountName << "|"
-             << bookings[i].phone << "|"
-             << bookings[i].flightID << "|"
-             << bookings[i].passengerName << "|"
-             << bookings[i].status << "|"
-             << bookings[i].paymentMethod << "\n";
-    }
-    file.close();
-}
-
-void loadPassengers() {
-    ifstream file("passengers.txt");
-    passengerCount = 0;
-
-    // FORMAT:
-    // name|email|phone|password
-    string line;
-    while (getline(file, line)) {
-        if (line.empty()) continue;
-        if (passengerCount >= 50) break;
-
-        int partsCount = 0;
-        string parts[4];
-        string temp;
-
-        for (char c : line) {
-            if (c == '|') {
-                if (partsCount < 4) parts[partsCount++] = temp;
-                temp.clear();
-            } else temp.push_back(c);
-        }
-        if (partsCount < 3) continue;
-        parts[partsCount++] = temp;
-
-        if (partsCount != 4) continue;
-
-        passengers[passengerCount].name = parts[0];
-        passengers[passengerCount].email = parts[1];
-        passengers[passengerCount].phone = parts[2];
-        passengers[passengerCount].password = parts[3];
-
-        passengerCount++;
-    }
-    file.close();
-}
-
-bool emailExists(const string &email) {
-    loadPassengers();
-    for (int i = 0; i < passengerCount; i++) {
-        if (passengers[i].email == email) return true;
-    }
-    return false;
-}
-
-// -------------------- POINTER HELPERS --------------------
-Flight* findFlightByID(int id) {
-    for (int i = 0; i < flightCount; i++) {
-        if (flights[i].id == id) return &flights[i];
-    }
+// ===================== FINDERS =====================
+Flight* findFlightByID(int id){
+    for(int i=0;i<flightCount;i++) if(flights[i].id==id) return &flights[i];
     return nullptr;
 }
 
-void displayFlight(Flight* f) {
-    if (!f) return;
-    cout << "ID: " << f->id << " | " << f->from << " -> " << f->to
-         << " | Seats: " << f->seats << " | Price: Rs " << f->price
-         << " | Date: " << f->date
-         << " | Departure: " << f->departureTime
-         << " | Arrival: " << f->arrivalTime << "\n";
-}
-
-// -------------------- RANDOM UNIQUE IDS --------------------
-bool bookingIDExists(int id) {
-    for (int i = 0; i < bookingCount; i++) if (bookings[i].bookingID == id) return true;
+// ===================== RANDOM UNIQUE IDS =====================
+bool bookingIDExists(int id){
+    for(int i=0;i<bookingCount;i++) if(bookings[i].bookingID==id) return true;
     return false;
 }
-
-int generateUniqueBookingID() {
+int generateUniqueBookingID(){
     int id;
-    do { id = 100000 + (rand() % 900000); } while (bookingIDExists(id));
+    do{ id=100000 + (rand()%900000); }while(bookingIDExists(id));
     return id;
 }
 
-bool flightIDExists(int id) {
-    for (int i = 0; i < flightCount; i++) if (flights[i].id == id) return true;
+bool flightIDExists(int id){
+    for(int i=0;i<flightCount;i++) if(flights[i].id==id) return true;
     return false;
 }
-
-int generateUniqueFlightID() {
+int generateUniqueFlightID(){
     int id;
-    do { id = 100 + (rand() % 900); } while (flightIDExists(id));
+    do{ id=100 + (rand()%900); }while(flightIDExists(id));
     return id;
 }
 
-bool checkActiveBookingExists(const string &name, const string &phone, int flightID) {
-    for (int i = 0; i < bookingCount; i++) {
-        if (bookings[i].accountName == name &&
-            bookings[i].phone == phone &&
-            bookings[i].flightID == flightID &&
-            bookings[i].status == "ACTIVE") {
-            return true;
-        }
+bool checkActiveBookingExists(const string &name,const string &phone,int flightID){
+    for(int i=0;i<bookingCount;i++){
+        if(bookings[i].accountName==name &&
+           bookings[i].phone==phone &&
+           bookings[i].flightID==flightID &&
+           bookings[i].status==ACTIVE) return true;
     }
     return false;
 }
 
-// -------------------- ADMIN LOGIN --------------------
-bool adminLogin() {
-    const string storedUser = "admin";
-    const string storedPass = "123";
-
-    while (true) {
-        cout << "\n--- Admin Login ---\n";
-        cout << "1. Login\n2. Back\n";
-        int c = getValidChoice("Choice: ", 1, 2);
-        if (c == 2) return false;
-
-        string user, pass;
-        cout << "Enter Admin Username: ";
-        cin >> user;
-        cout << "Enter Password: ";
-        cin >> pass;
-
-        if (user == storedUser && pass == storedPass) {
-            cout << "\nLogin Successful!\n";
-            return true;
+// ===================== FILE OPS (NO split() FUNCTION) =====================
+void loadFlights(){
+    ifstream file("flights.txt");
+    flightCount=0;
+    string line;
+    while(getline(file,line)){
+        if(line.empty() || flightCount>=50) continue;
+        string parts[8], temp; int pc=0;
+        for(char c: line){
+            if(c=='|'){ if(pc<8) parts[pc++]=temp; temp.clear(); }
+            else temp.push_back(c);
         }
-        cout << "Wrong username or password!\n";
+        if(pc<7) continue;
+        parts[pc++]=temp;
+        if(pc!=8) continue;
+
+        flights[flightCount].id=stoi(parts[0]);
+        flights[flightCount].from=parts[1];
+        flights[flightCount].to=parts[2];
+        flights[flightCount].seats=stoi(parts[3]);
+        flights[flightCount].price=stoi(parts[4]);
+        flights[flightCount].date=parts[5];
+        flights[flightCount].departureTime=parts[6];
+        flights[flightCount].arrivalTime=parts[7];
+        flightCount++;
     }
 }
 
-// -------------------- PASSENGER SIGNUP/LOGIN --------------------
-bool passengerSignupAndAutoLogin(string &name, string &email, string &phone) {
-    cout << "\n--- Passenger Signup ---\n";
+void saveFlights(){
+    ofstream file("flights.txt");
+    for(int i=0;i<flightCount;i++){
+        file<<flights[i].id<<"|"<<flights[i].from<<"|"<<flights[i].to<<"|"
+            <<flights[i].seats<<"|"<<flights[i].price<<"|"<<flights[i].date<<"|"
+            <<flights[i].departureTime<<"|"<<flights[i].arrivalTime<<"\n";
+    }
+}
+
+void loadBookings(){
+    ifstream file("bookings.txt");
+    bookingCount=0;
+    string line;
+    while(getline(file,line)){
+        if(line.empty() || bookingCount>=50) continue;
+        string parts[7], temp; int pc=0;
+        for(char c: line){
+            if(c=='|'){ if(pc<7) parts[pc++]=temp; temp.clear(); }
+            else temp.push_back(c);
+        }
+        if(pc<6) continue;
+        parts[pc++]=temp;
+        if(pc!=7) continue;
+
+        bookings[bookingCount].bookingID=stoi(parts[0]);
+        bookings[bookingCount].accountName=parts[1];
+        bookings[bookingCount].phone=parts[2];
+        bookings[bookingCount].flightID=stoi(parts[3]);
+        bookings[bookingCount].travellerName=parts[4];
+        bookings[bookingCount].status=parts[5];
+        bookings[bookingCount].paymentMethod=parts[6];
+        bookingCount++;
+    }
+}
+
+void saveBookings(){
+    ofstream file("bookings.txt");
+    for(int i=0;i<bookingCount;i++){
+        file<<bookings[i].bookingID<<"|"<<bookings[i].accountName<<"|"<<bookings[i].phone<<"|"
+            <<bookings[i].flightID<<"|"<<bookings[i].travellerName<<"|"<<bookings[i].status<<"|"
+            <<bookings[i].paymentMethod<<"\n";
+    }
+}
+
+void loadPassengers(){
+    ifstream file("passengers.txt");
+    passengerCount=0;
+    string line;
+    while(getline(file,line)){
+        if(line.empty() || passengerCount>=50) continue;
+        string parts[4], temp; int pc=0;
+        for(char c: line){
+            if(c=='|'){ if(pc<4) parts[pc++]=temp; temp.clear(); }
+            else temp.push_back(c);
+        }
+        if(pc<3) continue;
+        parts[pc++]=temp;
+        if(pc!=4) continue;
+
+        passengers[passengerCount].name=parts[0];
+        passengers[passengerCount].email=parts[1];
+        passengers[passengerCount].phone=parts[2];
+        passengers[passengerCount].password=parts[3];
+        passengerCount++;
+    }
+}
+
+bool emailExists(const string &email){
+    loadPassengers();
+    for(int i=0;i<passengerCount;i++) if(passengers[i].email==email) return true;
+    return false;
+}
+
+// ===================== ADMIN =====================
+bool adminLogin(){
+    const string storedUser="admin", storedPass="123";
+    const string opts[]={"Login","Back"};
+    while(true){
+        int c=runMenu("Admin Login", opts, 2);
+        if(c==2) return false;
+
+        string u,p;
+        cout<<"Username: "; cin>>u;
+        cout<<"Password: "; cin>>p;
+        if(u==storedUser && p==storedPass){ cout<<"\nLogin Successful!\n"; return true; }
+        cout<<"Wrong username or password!\n";
+    }
+}
+
+void addFlight(){
+    if(flightCount>=50){ cout<<"Maximum flights reached!\n"; return; }
+
+    Flight f;
+    f.id=generateUniqueFlightID();
+    cout<<"\nGenerated Flight ID: "<<f.id<<"\n";
 
     clearLine();
-    name = readLineNonEmpty("Enter Full Name: ");
+    cout<<"From (single word or use _ for spaces): "; getline(cin, f.from);
+    cout<<"To   (single word or use _ for spaces): "; getline(cin, f.to);
 
-    while (true) {
-        cout << "Enter Email: ";
-        cin >> email;
+    f.seats=getValidInt("Seats: ");
+    f.price=getValidInt("Price: ");
+    f.date=promptUntil("Date (YYYY-MM-DD) (0 back): ", isValidDate, "Invalid date!");
+    if(f.date=="0") return;
 
-        if (!isEmailValidBasic(email)) {
-            cout << "Invalid email format! Example: user@gmail.com\n";
-            continue;
+    f.departureTime=promptUntil("Departure (HH:MM) (0 back): ", isValidTimeHHMM, "Invalid time!");
+    if(f.departureTime=="0") return;
+
+    f.arrivalTime=promptUntil("Arrival   (HH:MM) (0 back): ", isValidTimeHHMM, "Invalid time!");
+    if(f.arrivalTime=="0") return;
+
+    flights[flightCount++]=f;
+    saveFlights();
+    cout<<"Flight added successfully!\n";
+}
+
+void editFlight(){
+    viewAllFlights();
+    if(flightCount==0) return;
+
+    int id=getValidInt("Enter Flight ID to edit (0 back): ");
+    if(id==0) return;
+
+    Flight* f=findFlightByID(id);
+    if(!f){ cout<<"Flight not found!\n"; return; }
+
+    const string opts[]={
+        "Edit From","Edit To","Edit Seats","Edit Price","Edit Date",
+        "Edit Departure","Edit Arrival","Back"
+    };
+
+    while(true){
+        int c=runMenu("Edit Flight", opts, 8);
+        if(c==8) break;
+
+        switch(c){
+            case 1: clearLine(); cout<<"New From: "; getline(cin,f->from); break;
+            case 2: clearLine(); cout<<"New To: "; getline(cin,f->to); break;
+            case 3: f->seats=getValidInt("New Seats: "); break;
+            case 4: f->price=getValidInt("New Price: "); break;
+            case 5:{
+                string d=promptUntil("New Date (YYYY-MM-DD) (0 back): ", isValidDate, "Invalid date!");
+                if(d!="0") f->date=d;
+                break;
+            }
+            case 6:{
+                string t=promptUntil("New Departure (HH:MM) (0 back): ", isValidTimeHHMM, "Invalid time!");
+                if(t!="0") f->departureTime=t;
+                break;
+            }
+            case 7:{
+                string t=promptUntil("New Arrival (HH:MM) (0 back): ", isValidTimeHHMM, "Invalid time!");
+                if(t!="0") f->arrivalTime=t;
+                break;
+            }
         }
-        if (emailExists(email)) {
-            cout << "This email already exists! Use another email.\n";
-            continue;
-        }
+        saveFlights();
+        cout<<"Updated!\n";
+    }
+}
+
+void deleteFlight(){
+    viewAllFlights();
+    if(flightCount==0) return;
+
+    int id=getValidInt("Enter Flight ID to delete (0 back): ");
+    if(id==0) return;
+
+    int idx=-1;
+    for(int i=0;i<flightCount;i++) if(flights[i].id==id){ idx=i; break; }
+    if(idx==-1){ cout<<"Flight not found!\n"; return; }
+
+    for(int i=idx;i<flightCount-1;i++) flights[i]=flights[i+1];
+    flightCount--;
+    saveFlights();
+    cout<<"Flight deleted successfully!\n";
+}
+
+void viewPassengers(){
+    loadPassengers();
+    cout<<"\n--- Registered Passengers ---\n";
+    if(passengerCount==0){ cout<<"No passengers found.\n"; return; }
+    for(int i=0;i<passengerCount;i++){
+        cout<<(i+1)<<". "<<passengers[i].name
+            <<" | "<<passengers[i].email
+            <<" | "<<passengers[i].phone<<"\n";
+    }
+}
+
+void viewAllBookings(){
+    cout<<"\n--- All Bookings (Active + Cancelled) ---\n";
+    if(bookingCount==0){ cout<<"No bookings found.\n"; return; }
+    for(int i=0;i<bookingCount;i++) printBooking(bookings[i]);
+}
+
+// ===================== PASSENGER AUTH =====================
+bool passengerSignupAndAutoLogin(string &name,string &email,string &phone){
+    clearLine();
+    cout<<"\n--- Passenger Signup ---\n";
+    cout<<"Full Name: "; getline(cin, name);
+
+    while(true){
+        cout<<"Email (0 back): ";
+        cin>>email;
+        if(email=="0") return false;
+        if(!isEmailValidBasic(email)){ cout<<"Invalid email format!\n"; continue; }
+        if(emailExists(email)){ cout<<"Email already exists!\n"; continue; }
         break;
     }
 
-    phone = getValidPhonePrompt("Enter Phone (03XXXXXXXXX): ");
+    phone = promptUntil("Phone 03XXXXXXXXX (0 back): ", isValidPKPhone, "Invalid phone!");
+    if(phone=="0") return false;
 
     string pass;
-    cout << "Enter Password: ";
-    cin >> pass;
+    cout<<"Password: "; cin>>pass;
 
-    // Save with delimiter '|'
     ofstream file("passengers.txt", ios::app);
-    file << name << "|" << email << "|" << phone << "|" << pass << "\n";
+    file<<name<<"|"<<email<<"|"<<phone<<"|"<<pass<<"\n";
 
-    cout << "Signup Successful! Redirecting to Passenger Home...\n";
+    cout<<"\nSignup Successful! Redirecting to Passenger Home...\n";
     return true;
 }
 
-bool passengerLogin(string &name, string &email, string &phone) {
+bool passengerLogin(string &name,string &email,string &phone){
     loadPassengers();
-    if (passengerCount == 0) {
-        cout << "No passengers found. Please signup first.\n";
-        return false;
-    }
+    if(passengerCount==0){ cout<<"No passengers found. Please signup first.\n"; return false; }
 
-    while (true) {
-        cout << "\n--- Passenger Login ---\n";
-        cout << "Enter Email (or 0 to go back): ";
-        cin >> email;
-        if (email == "0") return false;
+    while(true){
+        cout<<"\n--- Passenger Login ---\n";
+        cout<<"Email (0 back): "; cin>>email;
+        if(email=="0") return false;
 
         string pass;
-        cout << "Enter Password: ";
-        cin >> pass;
+        cout<<"Password: "; cin>>pass;
 
-        bool emailFound = false;
-        for (int i = 0; i < passengerCount; i++) {
-            if (passengers[i].email == email) {
-                emailFound = true;
-                if (passengers[i].password == pass) {
-                    name = passengers[i].name;
-                    phone = passengers[i].phone;
-                    cout << "\nLogin Successful!\n";
+        bool found=false;
+        for(int i=0;i<passengerCount;i++){
+            if(passengers[i].email==email){
+                found=true;
+                if(passengers[i].password==pass){
+                    name=passengers[i].name;
+                    phone=passengers[i].phone;
+                    cout<<"\nLogin Successful!\n";
                     return true;
-                } else {
-                    cout << "Wrong password!\n";
+                }else{
+                    cout<<"Wrong password!\n";
                 }
                 break;
             }
         }
-
-        if (!emailFound) cout << "User not found! This email is not registered.\n";
+        if(!found) cout<<"User not found!\n";
     }
 }
 
-// -------------------- PAYMENT --------------------
-int choosePaymentMethod(string &methodOut) {
-    cout << "\n--- Payment Method ---\n";
-    cout << "1. Cash\n2. Card\n3. Online Payment\n4. Back\n";
-    int c = getValidChoice("Choose: ", 1, 4);
-
-    if (c == 4) return 0;
-    if (c == 1) methodOut = "CASH";
-    else if (c == 2) methodOut = "CARD";
-    else methodOut = "ONLINE";
+// ===================== PAYMENT =====================
+int choosePaymentMethod(string &methodOut){
+    const string opts[]={"Cash","Card","Online Payment","Back"};
+    int c=runMenu("Payment Method", opts, 4);
+    if(c==4) return 0;
+    methodOut = (c==1?CASH:(c==2?CARD:ONLINE));
     return 1;
 }
 
-bool processPayment(const string &method, int amountRs) {
-    cout << "\nAmount to Pay: Rs " << amountRs << "\n";
+bool processPayment(const string &method,int amountRs){
+    cout<<"\nAmount to Pay: Rs "<<amountRs<<"\n";
 
-    if (method == "CASH") {
-        int paid = getValidInt("Enter cash amount given: ");
-        if (paid < amountRs) {
-            cout << "Payment failed: not enough cash.\n";
-            return false;
-        }
-        cout << "Payment successful. Change: Rs " << (paid - amountRs) << "\n";
+    if(method==CASH){
+        int paid=getValidInt("Enter cash amount: ");
+        if(paid<amountRs){ cout<<"Payment failed (not enough cash).\n"; return false; }
+        cout<<"Payment successful. Change: Rs "<<(paid-amountRs)<<"\n";
         return true;
     }
 
-    if (method == "CARD") {
-        string cardNo, pin;
-        cout << "Enter 16-digit Card Number: ";
-        cin >> cardNo;
-        cout << "Enter 4-digit PIN: ";
-        cin >> pin;
-
-        if (cardNo.size() != 16 || !isDigitsOnly(cardNo) || pin.size() != 4 || !isDigitsOnly(pin)) {
-            cout << "Payment failed: invalid card details.\n";
-            return false;
+    if(method==CARD){
+        string cardNo,pin;
+        cout<<"Card Number (16 digits): "; cin>>cardNo;
+        cout<<"PIN (4 digits): "; cin>>pin;
+        if(cardNo.size()!=16 || !isDigitsOnly(cardNo) || pin.size()!=4 || !isDigitsOnly(pin)){
+            cout<<"Payment failed (invalid card details).\n"; return false;
         }
-        cout << "Payment successful via CARD.\n";
+        cout<<"Payment successful via CARD.\n";
         return true;
     }
 
-    if (method == "ONLINE") {
-        string txn, otp;
-        cout << "Enter Transaction ID: ";
-        cin >> txn;
-        cout << "Enter OTP (4 digits): ";
-        cin >> otp;
-
-        if (txn.size() < 4 || otp.size() != 4 || !isDigitsOnly(otp)) {
-            cout << "Payment failed: invalid online payment details.\n";
-            return false;
+    if(method==ONLINE){
+        string txn,otp;
+        cout<<"Transaction ID: "; cin>>txn;
+        cout<<"OTP (4 digits): "; cin>>otp;
+        if(txn.size()<4 || otp.size()!=4 || !isDigitsOnly(otp)){
+            cout<<"Payment failed (invalid online details).\n"; return false;
         }
-        cout << "Payment successful via ONLINE payment.\n";
+        cout<<"Payment successful via ONLINE.\n";
         return true;
     }
-
     return false;
 }
 
-// -------------------- PASSENGER FUNCTIONS --------------------
-void viewAllFlightsPassenger() {
-    cout << "\n--- All Available Flights ---\n";
-    if (flightCount == 0) {
-        cout << "No flights available.\n";
-        return;
-    }
-    for (int i = 0; i < flightCount; i++) displayFlight(&flights[i]);
-}
-
-void searchFlights() {
+// ===================== PASSENGER FEATURES =====================
+void searchFlights(){
     clearLine();
-    string from = readLineNonEmpty("\nFrom: ");
-    string to   = readLineNonEmpty("To: ");
-    string date = getValidDatePrompt("Date (YYYY-MM-DD): ");
+    string from,to;
+    cout<<"\nFrom: "; getline(cin, from);
+    cout<<"To: "; getline(cin, to);
 
-    bool found = false;
-    cout << "\n--- Search Results ---\n";
-    for (int i = 0; i < flightCount; i++) {
-        if (flights[i].from == from && flights[i].to == to && flights[i].date == date) {
-            displayFlight(&flights[i]);
-            found = true;
+    string date = promptUntil("Date (YYYY-MM-DD) (0 back): ", isValidDate, "Invalid date!");
+    if(date=="0") return;
+
+    bool found=false;
+    cout<<"\n--- Search Results ---\n";
+    for(int i=0;i<flightCount;i++){
+        if(flights[i].from==from && flights[i].to==to && flights[i].date==date){
+            displayFlight(flights[i]);
+            found=true;
         }
     }
-    if (!found) cout << "No flights found.\n";
+    if(!found) cout<<"No flights found.\n";
 }
 
-void bookTicket(const string &pName, const string &pPhone) {
-    searchFlights();
+int selectFlightIDFromList(){
+    viewAllFlights();
+    if(flightCount==0) return 0;
 
-    int id = getValidInt("\nEnter Flight ID to book (0 to go back): ");
-    if (id == 0) return;
+    int id=getValidInt("Enter Flight ID to book (0 back): ");
+    if(id==0) return 0;
 
-    Flight* f = findFlightByID(id);
-    if (!f) { cout << "Invalid Flight ID!\n"; return; }
-    if (f->seats <= 0) { cout << "No seats available!\n"; return; }
-    if (checkActiveBookingExists(pName, pPhone, id)) { cout << "You already booked this flight (ACTIVE).\n"; return; }
-    if (bookingCount >= 50) { cout << "Maximum bookings reached!\n"; return; }
+    if(!findFlightByID(id)){ cout<<"Invalid Flight ID!\n"; return -1; }
+    return id;
+}
+
+string chooseTraveller(const string &accountName){
+    const string opts[]={"Myself","Someone Else"};
+    int c=runMenu("Who will be travelling?", opts, 2);
+    if(c==1) return accountName;
 
     clearLine();
-    string traveller = readLineNonEmpty("Enter Traveller Full Name: ");
+    string t;
+    cout<<"Traveller Full Name: ";
+    getline(cin, t);
+    if(t.empty()) return accountName; // fallback
+    return t;
+}
+
+void bookTicket(const string &pName,const string &pPhone){
+    int id=selectFlightIDFromList();
+    if(id==0 || id==-1) return;
+
+    Flight* f=findFlightByID(id);
+    if(!f) return;
+
+    if(f->seats<=0){ cout<<"No seats available!\n"; return; }
+    if(checkActiveBookingExists(pName,pPhone,id)){ cout<<"You already booked this flight (ACTIVE).\n"; return; }
+    if(bookingCount>=50){ cout<<"Maximum bookings reached!\n"; return; }
+
+    string traveller = chooseTraveller(pName);
 
     string method;
-    if (!choosePaymentMethod(method)) {
-        cout << "Booking cancelled (Back).\n";
-        return;
-    }
+    if(!choosePaymentMethod(method)){ cout<<"Booking cancelled (Back).\n"; return; }
+    if(!processPayment(method, f->price)){ cout<<"Booking cancelled because payment failed.\n"; return; }
 
-    if (!processPayment(method, f->price)) {
-        cout << "Booking cancelled because payment failed.\n";
-        return;
-    }
-
-    int newBID = generateUniqueBookingID();
-    bookings[bookingCount] = {newBID, pName, pPhone, id, traveller, "ACTIVE", method};
-    bookingCount++;
-    saveBookingsToFile();
+    int bid=generateUniqueBookingID();
+    bookings[bookingCount++] = {bid, pName, pPhone, id, traveller, ACTIVE, method};
+    saveBookings();
 
     f->seats--;
-    saveFlightsToFile();
+    saveFlights();
 
-    cout << "\nTICKET BOOKED SUCCESSFULLY!\n";
-    cout << "Booking ID: " << newBID
-         << "\nFlight ID: " << id
-         << "\nBooked by: " << pName
-         << "\nTraveller: " << traveller
-         << "\nFlight: " << f->from << " -> " << f->to
-         << "\nDate: " << f->date
-         << "\nDeparture: " << f->departureTime
-         << " | Arrival: " << f->arrivalTime
-         << "\nPrice: Rs " << f->price
-         << "\nPayment Method: " << method
-         << "\nStatus: ACTIVE\n";
+    cout<<"\nTICKET BOOKED SUCCESSFULLY!\n";
+    printBooking(bookings[bookingCount-1]);
 }
 
-void viewMyFlightHistory(const string &pName, const string &pPhone) {
-    cout << "\n--- Your Flight History (Active + Cancelled) ---\n";
-    bool found = false;
-
-    for (int i = 0; i < bookingCount; i++) {
-        if (bookings[i].accountName == pName && bookings[i].phone == pPhone) {
-            found = true;
-            Flight* f = findFlightByID(bookings[i].flightID);
-
-            cout << "Booking ID: " << bookings[i].bookingID
-                 << " | Flight ID: " << bookings[i].flightID
-                 << " | Traveller: " << bookings[i].passengerName
-                 << " | Payment: " << bookings[i].paymentMethod
-                 << " | Status: " << bookings[i].status;
-
-            if (f) {
-                cout << " | " << f->from << " -> " << f->to
-                     << " | Date: " << f->date
-                     << " | Dep: " << f->departureTime
-                     << " | Arr: " << f->arrivalTime
-                     << " | Price: Rs " << f->price;
-            } else {
-                cout << " | (Flight info not found)";
-            }
-            cout << "\n";
+void viewMyFlightHistory(const string &pName,const string &pPhone){
+    cout<<"\n--- Your Flight History (Active + Cancelled) ---\n";
+    bool found=false;
+    for(int i=0;i<bookingCount;i++){
+        if(bookings[i].accountName==pName && bookings[i].phone==pPhone){
+            printBooking(bookings[i]);
+            found=true;
         }
     }
-    if (!found) cout << "You have no history.\n";
+    if(!found) cout<<"No history.\n";
 }
 
-void cancelBooking(const string &pName, const string &pPhone) {
-    viewMyFlightHistory(pName, pPhone);
+void cancelBooking(const string &pName,const string &pPhone){
+    viewMyFlightHistory(pName,pPhone);
+    int bid=getValidInt("Enter Booking ID to cancel (0 back): ");
+    if(bid==0) return;
 
-    int bookingID = getValidInt("Enter Booking ID to cancel (0 to go back): ");
-    if (bookingID == 0) return;
+    for(int i=0;i<bookingCount;i++){
+        if(bookings[i].accountName==pName && bookings[i].phone==pPhone &&
+           bookings[i].bookingID==bid && bookings[i].status==ACTIVE){
 
-    for (int i = 0; i < bookingCount; i++) {
-        if (bookings[i].accountName == pName && bookings[i].phone == pPhone &&
-            bookings[i].bookingID == bookingID && bookings[i].status == "ACTIVE") {
+            bookings[i].status=CANCELLED;
+            Flight* f=findFlightByID(bookings[i].flightID);
+            if(f) f->seats++;
 
-            bookings[i].status = "CANCELLED";
-
-            Flight* f = findFlightByID(bookings[i].flightID);
-            if (f) f->seats++;
-
-            saveBookingsToFile();
-            saveFlightsToFile();
-            cout << "Booking cancelled successfully! (Saved in history)\n";
+            saveBookings();
+            saveFlights();
+            cout<<"Booking cancelled successfully!\n";
             return;
         }
     }
-    cout << "No ACTIVE booking found with this Booking ID.\n";
+    cout<<"No ACTIVE booking found with this Booking ID.\n";
 }
 
-// -------------------- ADMIN FUNCTIONS --------------------
-void viewFlightsAdmin() {
-    cout << "\n--- Flights (Admin View) ---\n";
-    if (flightCount == 0) { cout << "No flights available.\n"; return; }
-    for (int i = 0; i < flightCount; i++) displayFlight(&flights[i]);
-}
-
-void addFlight() {
-    if (flightCount >= 50) { cout << "Maximum flights reached!\n"; return; }
-
-    Flight* f = &flights[flightCount];
-    f->id = generateUniqueFlightID();
-    cout << "\nGenerated Flight ID: " << f->id << "\n";
-
-    clearLine();
-    f->from = readLineNonEmpty("From (city/airport): ");
-    f->to   = readLineNonEmpty("To (city/airport): ");
-    f->seats = getValidInt("Seats: ");
-    f->price = getValidInt("Price: ");
-    f->date  = getValidDatePrompt("Date (YYYY-MM-DD): ");
-    f->departureTime = getValidTimePrompt("Departure Time (HH:MM): ");
-    f->arrivalTime   = getValidTimePrompt("Arrival Time (HH:MM): ");
-
-    flightCount++;
-    saveFlightsToFile();
-    cout << "Flight added successfully!\n";
-}
-
-void editFlight() {
-    viewFlightsAdmin();
-    if (flightCount == 0) return;
-
-    int id = getValidInt("\nEnter Flight ID to edit (0 to go back): ");
-    if (id == 0) return;
-
-    Flight* f = findFlightByID(id);
-    if (!f) { cout << "Flight not found!\n"; return; }
-
-    int choice;
-    do {
-        cout << "\n--- Edit Menu (Flight ID: " << f->id << ") ---\n";
-        cout << "1. Edit From\n2. Edit To\n3. Edit Seats\n4. Edit Price\n5. Edit Date\n"
-             << "6. Edit Departure\n7. Edit Arrival\n8. Back\n";
-        choice = getValidChoice("Choice: ", 1, 8);
-
-        switch (choice) {
-            case 1: clearLine(); f->from = readLineNonEmpty("New From: "); break;
-            case 2: clearLine(); f->to   = readLineNonEmpty("New To: "); break;
-            case 3: f->seats = getValidInt("New Seats: "); break;
-            case 4: f->price = getValidInt("New Price: "); break;
-            case 5: f->date = getValidDatePrompt("New Date (YYYY-MM-DD): "); break;
-            case 6: f->departureTime = getValidTimePrompt("New Departure (HH:MM): "); break;
-            case 7: f->arrivalTime   = getValidTimePrompt("New Arrival (HH:MM): "); break;
-            case 8: break;
-        }
-    } while (choice != 8);
-
-    saveFlightsToFile();
-    cout << "Flight updated successfully!\n";
-}
-
-void deleteFlight() {
-    viewFlightsAdmin();
-    if (flightCount == 0) return;
-
-    int id = getValidInt("\nEnter Flight ID to delete (0 to go back): ");
-    if (id == 0) return;
-
-    int index = -1;
-    for (int i = 0; i < flightCount; i++) if (flights[i].id == id) { index = i; break; }
-    if (index == -1) { cout << "Flight not found!\n"; return; }
-
-    for (int i = index; i < flightCount - 1; i++) flights[i] = flights[i + 1];
-    flightCount--;
-    saveFlightsToFile();
-    cout << "Flight deleted successfully!\n";
-}
-
-void viewPassengers() {
-    loadPassengers();
-    cout << "\n--- Registered Passengers ---\n";
-    if (passengerCount == 0) { cout << "No passengers found.\n"; return; }
-
-    for (int i = 0; i < passengerCount; i++) {
-        cout << (i + 1) << ". Name: " << passengers[i].name
-             << " | Email: " << passengers[i].email
-             << " | Phone: " << passengers[i].phone << "\n";
-    }
-}
-
-void viewAllBookings() {
-    cout << "\n--- All Bookings (Active + Cancelled) ---\n";
-    if (bookingCount == 0) { cout << "No bookings found.\n"; return; }
-
-    for (int i = 0; i < bookingCount; i++) {
-        Flight* f = findFlightByID(bookings[i].flightID);
-        cout << "Booking ID: " << bookings[i].bookingID
-             << " | Account: " << bookings[i].accountName
-             << " | Phone: " << bookings[i].phone
-             << " | Traveller: " << bookings[i].passengerName
-             << " | FlightID: " << bookings[i].flightID
-             << " | Payment: " << bookings[i].paymentMethod
-             << " | Status: " << bookings[i].status;
-        if (f) cout << " | " << f->from << " -> " << f->to << " | Date: " << f->date;
-        else cout << " | (Flight info not found)";
-        cout << "\n";
-    }
-}
-
-// -------------------- MAIN --------------------
-int main() {
+// ===================== MAIN =====================
+int main(){
     srand((unsigned)time(nullptr));
-
     loadFlights();
     loadBookings();
 
-    while (true) {
-        cout << "\n===== WELCOME TO FLIGHT MANAGEMENT SYSTEM =====\n";
-        cout << "1. Admin\n2. Passenger\n3. Exit\n";
-        int userType = getValidChoice("Choice: ", 1, 3);
+    const string mainOpts[]={"Admin","Passenger","Exit"};
+
+    while(true){
+        int userType = runMenu("WELCOME TO FLIGHT MANAGEMENT SYSTEM", mainOpts, 3);
 
         // ADMIN
-        if (userType == 1) {
-            if (!adminLogin()) continue;
+        if(userType==1){
+            if(!adminLogin()) continue;
 
-            while (true) {
-                cout << "\n--- ADMIN MENU ---\n";
-                cout << "1. View Flights\n2. Add Flight (Random ID)\n3. Edit Flight\n4. Delete Flight\n5. View Passengers\n6. View All Bookings\n7. Back\n";
-                int c = getValidChoice("Choice: ", 1, 7);
-                if (c == 7) break;
+            const string adminOpts[]={
+                "View Flights","Add Flight (Random ID)","Edit Flight","Delete Flight",
+                "View Passengers","View All Bookings","Back"
+            };
 
-                switch (c) {
-                    case 1: viewFlightsAdmin(); break;
-                    case 2: addFlight(); break;
-                    case 3: editFlight(); break;
-                    case 4: deleteFlight(); break;
-                    case 5: viewPassengers(); break;
-                    case 6: viewAllBookings(); break;
-                }
+            while(true){
+                int c=runMenu("ADMIN MENU", adminOpts, 7);
+                if(c==7) break;
+                if(c==1) viewAllFlights();
+                else if(c==2) addFlight();
+                else if(c==3) editFlight();
+                else if(c==4) deleteFlight();
+                else if(c==5) viewPassengers();
+                else if(c==6) viewAllBookings();
             }
         }
 
         // PASSENGER
-        else if (userType == 2) {
-            while (true) {
-                cout << "\n--- PASSENGER ---\n";
-                cout << "1. Login\n2. Signup\n3. Back\n";
-                int opt = getValidChoice("Choice: ", 1, 3);
-                if (opt == 3) break;
+        else if(userType==2){
+            const string passEntry[]={"Login","Signup","Back"};
+            while(true){
+                int opt = runMenu("PASSENGER", passEntry, 3);
+                if(opt==3) break;
 
-                string name, email, phone;
-                bool loggedIn = false;
+                string name,email,phone;
+                bool loggedIn = (opt==1) ? passengerLogin(name,email,phone)
+                                        : passengerSignupAndAutoLogin(name,email,phone);
+                if(!loggedIn) continue;
 
-                if (opt == 1) loggedIn = passengerLogin(name, email, phone);
-                else loggedIn = passengerSignupAndAutoLogin(name, email, phone);
+                const string passOpts[]={
+                    "View All Flights","Search Flights","Book Ticket","Cancel Booking",
+                    "View My Flight History","Back"
+                };
 
-                if (!loggedIn) continue;
-
-                while (true) {
-                    cout << "\n--- PASSENGER MENU ---\n";
-                    cout << "1. View All Flights\n2. Search Flights\n3. Book Ticket\n4. Cancel Booking\n5. View My Flight History\n6. Back\n";
-                    int c = getValidChoice("Choice: ", 1, 6);
-                    if (c == 6) break;
-
-                    switch (c) {
-                        case 1: viewAllFlightsPassenger(); break;
-                        case 2: searchFlights(); break;
-                        case 3: bookTicket(name, phone); break;
-                        case 4: cancelBooking(name, phone); break;
-                        case 5: viewMyFlightHistory(name, phone); break;
-                    }
+                while(true){
+                    int c=runMenu("PASSENGER MENU", passOpts, 6);
+                    if(c==6) break;
+                    if(c==1) viewAllFlights();
+                    else if(c==2) searchFlights();
+                    else if(c==3) bookTicket(name,phone);
+                    else if(c==4) cancelBooking(name,phone);
+                    else if(c==5) viewMyFlightHistory(name,phone);
                 }
             }
         }
 
         // EXIT
-        else {
-            cout << "Exiting program...\n";
+        else{
+            cout<<"Exiting program...\n";
             break;
         }
     }
-
     return 0;
 }
