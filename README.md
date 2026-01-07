@@ -1,47 +1,60 @@
 
-# ✈️ Flight Management System (C++ Console Application)
+# ✈️ Flight Management System (C++)
 
-A complete **console-based Flight Management System** developed in **C++**, demonstrating real-world programming concepts such as **file handling, pointers, authentication, booking workflows, payment simulation, and booking history management**.
+A **console-based Flight Management System** developed in **C++**, designed as an academic / learning project.  
+The system supports **Admin** and **Passenger** roles with full booking, payment, validation, and file-based persistence.
 
-This project supports **Admin** and **Passenger** roles and stores data persistently using text files.
+This project demonstrates strong use of **file handling, pointers, input validation, menu-driven design, and real-world logic**.
 
-🔗 **GitHub Repository:**  
+🔗 **GitHub Repository**  
 https://github.com/OPxMirza/flight-management-system-cpp
 
 ---
 
-## 📌 Features
+## 📌 Key Features
 
 ### 👨‍💼 Admin
 - Secure admin login
-- View all available flights
-- Add new flights
-- Flight data stored in `flights.txt`
+- View all flights
+- Add flights with **random unique Flight ID**
+- Edit flights (city, seats, price, date, time)
+- Delete flights
+- View all registered passengers
+- View all bookings (ACTIVE + CANCELLED)
 
 ---
 
 ### 🧑‍✈️ Passenger
-- Signup using **Name, Email, Phone, Password**
-- Email-based login (validates if user exists)
+- Signup with:
+  - Full Name (supports spaces)
+  - Email (unique, validated)
+  - Phone number (Pakistan format: `03XXXXXXXXX`)
+  - Password
+- Email-based login
+- Automatically redirected to **Passenger Home** after login
+- View all available flights
 - Search flights by **From, To, Date**
-- Book flight tickets with:
-  - 🎟️ **Random unique Booking ID**
-  - 💳 **Payment method selection**
-    - Cash  
-    - Card  
+- Book ticket with:
+  - Random **6-digit Booking ID**
+  - Traveller name (supports spaces)
+  - Payment method:
+    - Cash
+    - Card
     - Online Payment
-- Cancel bookings (status changes to **CANCELLED**, history preserved)
+- Payment validation for each method
+- Cancel booking (status changes to `CANCELLED`)
 - View complete **Flight History** (ACTIVE + CANCELLED)
-- All passenger and booking data stored using file handling
+- Exit / Back option available at every menu
 
 ---
 
 ## 🛠️ Technologies Used
 - **C++**
-- **File Handling (`fstream`)**
-- **Pointers & Arrays**
-- **Random Number Generation**
-- **Menu-driven Console Interface**
+- File Handling (`fstream`)
+- Pointers & Arrays
+- Random ID generation
+- Input validation (email, phone, date, time)
+- Menu-driven console UI
 
 ---
 
@@ -54,85 +67,94 @@ flight-management-system-cpp/
 ├── flights.txt
 ├── passengers.txt
 ├── bookings.txt
-├── .gitignore
-└── README.md
+├── README.md
+└── .gitignore
 ````
 
 ---
 
 ## 📄 Data File Formats
 
+All files use the **`|` (pipe) delimiter** to support spaces in names and cities.
+
+---
+
 ### ✈️ `flights.txt`
 
-**Format:**
+**Format**
 
 ```
-id from to seats price date departureTime arrivalTime
+flightID|from|to|seats|price|date|departureTime|arrivalTime
 ```
 
-Example:
+**Example**
 
 ```
-101 Karachi Lahore 20 18000 2026-01-10 09:00 10:30
-102 Karachi Islamabad 15 22000 2026-01-10 11:00 12:50
+312|Karachi|Lahore|20|18000|2026-01-10|09:00|10:30
+478|Karachi|Islamabad|15|22000|2026-01-10|11:00|12:50
 ```
 
 ---
 
 ### 👤 `passengers.txt`
 
-**Format:**
+**Format**
 
 ```
-name email phone password
+name|email|phone|password
 ```
 
-Example:
+**Example**
 
 ```
-Ali ali@gmail.com 03011234567 ali123
-Sara sara@gmail.com 03124567890 sara123
+Ali Raza|ali@gmail.com|03001234567|ali123
+Sara Khan|sara@gmail.com|03124567890|sara123
 ```
 
 ---
 
 ### 🎫 `bookings.txt`
 
-**Format:**
+**Format**
 
 ```
-bookingID accountName phone flightID passengerName status paymentMethod
+bookingID|accountName|phone|flightID|passengerName|status|paymentMethod
 ```
 
-Example:
+**Example**
 
 ```
-345901 Ali 03011234567 101 Ali ACTIVE CARD
-221004 Ali 03011234567 102 Ali CANCELLED CASH
+345901|Ali Raza|03001234567|312|Ali Raza|ACTIVE|CARD
+221004|Ali Raza|03001234567|478|Ali Raza|CANCELLED|CASH
 ```
 
 ---
 
-## 🔄 Booking Workflow
+## 💳 Payment Methods
 
-1. Passenger logs in using **email + password**
-2. Searches available flights
-3. Selects flight by ID
-4. Enters passenger (traveller) name
-5. Chooses payment method (Cash / Card / Online)
-6. System validates payment input
-7. Random **Booking ID** is generated
-8. Seat count updates automatically
-9. Booking is saved to file
+* **Cash**
+
+  * Validates paid amount
+* **Card**
+
+  * 16-digit card number
+  * 4-digit PIN
+* **Online Payment**
+
+  * Transaction ID
+  * 4-digit OTP
 
 ---
 
-## ❌ Cancellation Logic
+## 📅 Validations Implemented
 
-* Booking is **not deleted**
-* Status changes from `ACTIVE` → `CANCELLED`
-* Flight seat count is restored
-* Cancelled bookings remain visible in history
+* Email format validation
+* Unique email check on signup
+* Phone number validation (`03XXXXXXXXX`)
+* Real date validation (`YYYY-MM-DD`)
+* Time validation (`HH:MM`, 24-hour)
+* Seat availability check
+* Duplicate active booking prevention
 
 ---
 
@@ -144,7 +166,7 @@ Example:
 g++ flight.cpp -o flight
 ```
 
-### Run (Linux / macOS)
+### Run (macOS / Linux)
 
 ```bash
 ./flight
@@ -161,18 +183,19 @@ flight.exe
 
 ## 🔐 Default Admin Credentials
 
-* **Username:** admin
-* **Password:** 123
+* **Username:** `admin`
+* **Password:** `123`
 
 ---
 
 ## 🚀 Future Improvements
 
-* Replace text files with database (MySQL / SQLite)
-* Encrypt passwords
-* Add seat selection feature
-* Add admin booking management
-* Convert to GUI or web-based application
+* Password encryption
+* Database integration (MySQL / SQLite)
+* Seat selection
+* GUI or Web version
+* Role-based access control
+* Report generation
 
 ---
 
@@ -185,5 +208,5 @@ GitHub: [https://github.com/OPxMirza](https://github.com/OPxMirza)
 
 ## 📜 License
 
-This project is intended for **learning and academic purposes**.
-You are free to modify and reuse it with proper credit.
+This project is for **educational and academic purposes**.
+You are free to use, modify, and improve it with proper credit.
